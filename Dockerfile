@@ -1,7 +1,7 @@
 ###########################################################################
 # lilypond-base: minimal image for running lilypond and its scripts
 ###########################################################################
-FROM ubuntu:23.04 as lilypond-base
+FROM emscripten/emsdk AS lilypond-base
 
 ## The fonts-texgyre package (the preferred default fonts) is not
 ## strictly required, since LilyPond can fall back on other fonts, but
@@ -12,31 +12,46 @@ FROM ubuntu:23.04 as lilypond-base
 ##
 RUN apt-get update \
 && DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends install -y \
-    adduser \
+    # adduser \
     fonts-texgyre \
     ghostscript \
-    guile-2.2 \
+    guile-3.0-dev \
     libpangoft2-1.0-0 \
     python-is-python3 \
     python3 \
-    sudo \
+    flex \
+    libfl-dev \
+    # sudo \
 && rm -rf /var/lib/apt/lists/*
 
 # Add a non-root user who can run sudo without a password.
-RUN useradd -m -s /bin/bash user \
-&& adduser user sudo \
-&& echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
-&& sudo -u user touch ~user/.sudo_as_admin_successful
+# RUN useradd -m -s /bin/bash user \
+# && adduser user sudo \
+# && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
+# && sudo -u user touch ~user/.sudo_as_admin_successful
 
-USER user
-COPY --chown=user:user ./install/base_bashrc_addendum /home/user/base_bashrc_addendum
-RUN cat ~/base_bashrc_addendum >> ~/.bashrc && rm ~/base_bashrc_addendum \
-&& mkdir ~/lilypond-build
+# USER user
+RUN cat <<EOF >> ~/.bashrc
+if [ "$TERM_PROGRAM" = "Apple_Terminal" ] ; then
+  L_FROG=$'\xf0\x9f\x90\xb8 '
+fi
+
+# The default one-line prompt gets long.  Set a two-line prompt.
+#
+# \e]2;...\a    set the window title in xterm
+# \e[1;7m       bold, reverse
+# \e[0m         normal
+#
+PS1="\[\e]2;${L_FROG}\h\a\]\[\e[1;7m\] \h:\w \[\e[0m\]\n\\$ "
+
+unset L_FROG
+EOF
+RUN mkdir ~/lilypond-build
 
 ###########################################################################
 # lilypond: for running LilyPond
 ###########################################################################
-FROM lilypond-base as lilypond
+FROM lilypond-base AS lilypond
 
 # Include LilyPond in the PATH.  We don't do this in the base image
 # because we don't want the development workflow to come to depend on
@@ -58,7 +73,7 @@ RUN echo 'PATH="$HOME/lilypond-build/out/bin:$PATH"' >> ~/.profile
 ###########################################################################
 # lilypond-dev: for LilyPond development
 ###########################################################################
-FROM lilypond-base as lilypond-dev
+FROM lilypond-base AS lilypond-dev
 
 ## YUCK: Testing, e.g. make test-baseline, uses git.
 ##
@@ -70,7 +85,7 @@ FROM lilypond-base as lilypond-dev
 ##   * moreutils (ts, errno, etc.)
 ##   * strace
 ##
-USER root
+# USER root
 RUN apt-get update \
 && DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends install -y \
     autoconf \
@@ -91,7 +106,7 @@ RUN apt-get update \
     gettext \
     git \
     groff \
-    guile-2.2-dev \
+    guile-3.0-dev \
     help2man \
     imagemagick \
     less \
@@ -143,7 +158,7 @@ RUN apt-get update \
 # this, you can reduce the image size slightly by commenting it out.
 # You'll also need to modify docker-compose.yaml so that it does not
 # try to start smbd.
-USER root
+# USER root
 RUN apt-get update \
 && DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends install -y \
     samba \
@@ -152,6 +167,8 @@ RUN apt-get update \
 && echo "   path = /home/user/lilypond-build" >> /etc/samba/smb.conf \
 && echo "   read only = yes" >> /etc/samba/smb.conf \
 && echo "   guest ok = yes" >> /etc/samba/smb.conf \
-&& echo "   force user = user" >> /etc/samba/smb.conf
+&& echo "   force user = root" >> /etc/samba/smb.conf
 
-USER user
+RUN echo 'export EM_PKG_CONFIG_PATH="$(pkg-config --variable pc_path pkg-config)"' >> ~/.bashrc
+
+# USER user

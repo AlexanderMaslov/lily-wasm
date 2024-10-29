@@ -8,17 +8,17 @@ services:
     hostname: lilydev
     image: lilypond-dev
     build:
-        context: .
-        target: lilypond-dev
+      context: .
+      target: lilypond-dev
 
     # LILYPOND_BUILD_DIR informs certain helper scripts that the build
     # directory is not the source directory.
     environment:
-      - LILYPOND_BUILD_DIR=/home/user/lilypond-build
-      - PYTHONPATH=/home/user/lilypond-src/python
+      - LILYPOND_BUILD_DIR=/root/lilypond-build
+      - PYTHONPATH=/root/lilypond-src/python
 
     ports:
-      - "127.0.0.1:10445:445/tcp" # SMB
+      - '127.0.0.1:10445:445/tcp' # SMB
 
     security_opt:
       - seccomp:unconfined
@@ -29,29 +29,30 @@ services:
     volumes:
       - type: bind
         source: ${LILY_SRC_DIR}
-        target: /home/user/lilypond-src
+        target: /root/lilypond-src
       - type: volume
         source: lilypond-build
-        target: /home/user/lilypond-build
+        target: /root/lilypond-build
 
     # HOST_GID and HOST_UID are set in the "do" wrapper script.
-    entrypoint: /bin/bash -c "\
-           sudo service smbd start \
-        && sudo usermod -g ${HOST_GID:-X} -u ${HOST_UID:-X} user \
-        && tail -f /dev/null"
+    entrypoint:
+      /bin/bash -c "\
+      sudo service smbd start \
+      && tail -f /dev/null"
+      # && sudo usermod -g ${HOST_GID:-X} -u ${HOST_UID:-X} user \
     stdin_open: false
     tty: false
 
-    user: user
-    working_dir: /home/user/lilypond-build
+    # user: user
+    working_dir: /root/lilypond-build
 
   lilypond:
     container_name: lilypond
     hostname: lilypond
     image: lilypond
     build:
-        context: .
-        target: lilypond
+      context: .
+      target: lilypond
 
     environment:
       - PYTHONPATH=/home/user/lilypond-src/python
@@ -88,8 +89,8 @@ services:
 
     # HOST_GID and HOST_UID are set in the "do" wrapper script.
     entrypoint: /bin/bash -c "\
-           sudo usermod -g ${HOST_GID:-X} -u ${HOST_UID:-X} user \
-        && tail -f /dev/null"
+      sudo usermod -g ${HOST_GID:-X} -u ${HOST_UID:-X} user \
+      && tail -f /dev/null"
     stdin_open: false
     tty: false
 
