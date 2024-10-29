@@ -1,3 +1,9 @@
+# LilyDev
+
+LilyDev is a custom GNU/Linux operating system which includes
+all the necessary software and tools to compile
+[LilyPond](http://lilypond.org/).
+
 # Docker
 
 LilyDev Docker image is recommended for Windows and macOS users who

@@ -4,7 +4,6 @@
 \#*\#
 
 *.lck
-.mkosi*
 LilyDev*
-mkosi.cache
 SHA256SUMS
+.env
